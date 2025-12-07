@@ -25,20 +25,154 @@ from utils.helpers import (
 class GymApp:
     """Aplicación principal de gestión del gimnasio"""
     
-    def __init__(self, root):
+    def __init__(self, root, usuario):
         self.root = root
-        self.root.title("🏋️ GymForTheMoment - Sistema de Gestión")
+        self.usuario = usuario  # Guardar info del usuario autenticado
+        self.root.title("GymForTheMoment - Sistema de Gestion")
         self.root.geometry("1200x700")
         self.root.minsize(1000, 600)
+        
+        # Colores del tema: Rojo, Negro, Gris, Amarillo
+        self.COLOR_ROJO = '#DC143C'      # Crimson red
+        self.COLOR_NEGRO = '#1a1a1a'     # Negro
+        self.COLOR_GRIS = '#2d2d2d'      # Gris oscuro
+        self.COLOR_GRIS_CLARO = '#505050' # Gris medio
+        self.COLOR_AMARILLO = '#FFD700'  # Dorado
+        self.COLOR_BLANCO = '#FFFFFF'
+        self.COLOR_TEXTO = '#E0E0E0'     # Texto claro
+        
+        # Configurar colores de fondo
+        self.root.configure(bg=self.COLOR_NEGRO)
         
         # Configurar estilo
         self.style = ttk.Style()
         self.style.theme_use('clam')
         
-        # Colores personalizados
-        self.style.configure('Title.TLabel', font=('Helvetica', 16, 'bold'))
-        self.style.configure('Subtitle.TLabel', font=('Helvetica', 12, 'bold'))
-        self.style.configure('Header.TLabel', font=('Helvetica', 10, 'bold'))
+        # Estilo general
+        self.style.configure('.',
+                           background=self.COLOR_GRIS,
+                           foreground=self.COLOR_TEXTO,
+                           borderwidth=0,
+                           relief='flat')
+        
+        # Frames
+        self.style.configure('TFrame',
+                           background=self.COLOR_NEGRO)
+        
+        self.style.configure('TLabelframe',
+                           background=self.COLOR_GRIS,
+                           foreground=self.COLOR_AMARILLO,
+                           borderwidth=2,
+                           relief='solid')
+        
+        self.style.configure('TLabelframe.Label',
+                           background=self.COLOR_GRIS,
+                           foreground=self.COLOR_AMARILLO,
+                           font=('Arial', 10, 'bold'))
+        
+        # Labels
+        self.style.configure('TLabel',
+                           background=self.COLOR_GRIS,
+                           foreground=self.COLOR_TEXTO,
+                           font=('Arial', 9))
+        
+        self.style.configure('Title.TLabel',
+                           background=self.COLOR_NEGRO,
+                           foreground=self.COLOR_ROJO,
+                           font=('Arial', 18, 'bold'))
+        
+        self.style.configure('Subtitle.TLabel',
+                           background=self.COLOR_GRIS,
+                           foreground=self.COLOR_AMARILLO,
+                           font=('Arial', 12, 'bold'))
+        
+        self.style.configure('Header.TLabel',
+                           background=self.COLOR_GRIS,
+                           foreground=self.COLOR_AMARILLO,
+                           font=('Arial', 10, 'bold'))
+        
+        # Botones - rectangulares con bordes definidos
+        self.style.configure('TButton',
+                           background=self.COLOR_ROJO,
+                           foreground=self.COLOR_BLANCO,
+                           borderwidth=0,
+                           relief='flat',
+                           font=('Arial', 9, 'bold'),
+                           padding=(10, 5))
+        
+        self.style.map('TButton',
+                      background=[('active', '#FF1744'), ('pressed', '#B71C1C')],
+                      foreground=[('active', self.COLOR_BLANCO)])
+        
+        # Notebook (pestañas)
+        self.style.configure('TNotebook',
+                           background=self.COLOR_NEGRO,
+                           borderwidth=0)
+        
+        self.style.configure('TNotebook.Tab',
+                           background=self.COLOR_GRIS,
+                           foreground=self.COLOR_TEXTO,
+                           padding=[20, 8],
+                           borderwidth=0,
+                           font=('Arial', 10, 'bold'))
+        
+        self.style.map('TNotebook.Tab',
+                      background=[('selected', self.COLOR_ROJO)],
+                      foreground=[('selected', self.COLOR_BLANCO)])
+        
+        # Entry
+        self.style.configure('TEntry',
+                           fieldbackground=self.COLOR_GRIS_CLARO,
+                           foreground=self.COLOR_BLANCO,
+                           borderwidth=1,
+                           relief='solid',
+                           insertcolor=self.COLOR_AMARILLO)
+        
+        # Combobox - Configuración mejorada para visibilidad
+        self.style.configure('TCombobox',
+                           fieldbackground='white',
+                           background='white',
+                           foreground='black',
+                           selectbackground=self.COLOR_ROJO,
+                           selectforeground='white',
+                           borderwidth=1,
+                           arrowcolor=self.COLOR_ROJO)
+        
+        self.style.map('TCombobox',
+                      fieldbackground=[('readonly', 'white'), ('disabled', self.COLOR_GRIS_CLARO)],
+                      foreground=[('readonly', 'black'), ('disabled', '#666666')],
+                      background=[('readonly', 'white'), ('active', self.COLOR_ROJO)],
+                      selectbackground=[('readonly', self.COLOR_ROJO)])
+        
+        # Treeview
+        self.style.configure('Treeview',
+                           background=self.COLOR_GRIS_CLARO,
+                           foreground=self.COLOR_BLANCO,
+                           fieldbackground=self.COLOR_GRIS_CLARO,
+                           borderwidth=0,
+                           relief='flat',
+                           font=('Arial', 9))
+        
+        self.style.configure('Treeview.Heading',
+                           background=self.COLOR_ROJO,
+                           foreground=self.COLOR_BLANCO,
+                           borderwidth=0,
+                           relief='flat',
+                           font=('Arial', 9, 'bold'))
+        
+        self.style.map('Treeview',
+                      background=[('selected', self.COLOR_ROJO)],
+                      foreground=[('selected', self.COLOR_BLANCO)])
+        
+        self.style.map('Treeview.Heading',
+                      background=[('active', '#FF1744')])
+        
+        # Scrollbar
+        self.style.configure('Vertical.TScrollbar',
+                           background=self.COLOR_GRIS,
+                           troughcolor=self.COLOR_NEGRO,
+                           borderwidth=0,
+                           arrowcolor=self.COLOR_AMARILLO)
         
         # Inicializar base de datos
         self.db = DatabaseManager()
@@ -55,6 +189,23 @@ class GymApp:
     def crear_interfaz(self):
         """Crea la interfaz principal con pestañas"""
         
+        # Crear menú
+        menubar = tk.Menu(self.root, bg=self.COLOR_GRIS, fg=self.COLOR_TEXTO,
+                         activebackground=self.COLOR_ROJO, activeforeground=self.COLOR_BLANCO)
+        self.root.config(menu=menubar)
+        
+        # Menú Archivo
+        menu_archivo = tk.Menu(menubar, tearoff=0, bg=self.COLOR_GRIS, fg=self.COLOR_TEXTO,
+                              activebackground=self.COLOR_ROJO, activeforeground=self.COLOR_BLANCO)
+        menubar.add_cascade(label="Archivo", menu=menu_archivo)
+        menu_archivo.add_command(label="Salir", command=self.on_closing)
+        
+        # Menú Ayuda
+        menu_ayuda = tk.Menu(menubar, tearoff=0, bg=self.COLOR_GRIS, fg=self.COLOR_TEXTO,
+                            activebackground=self.COLOR_ROJO, activeforeground=self.COLOR_BLANCO)
+        menubar.add_cascade(label="Ayuda", menu=menu_ayuda)
+        menu_ayuda.add_command(label="Acerca de", command=self.mostrar_acerca_de)
+        
         # Frame principal
         self.main_frame = ttk.Frame(self.root, padding="10")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
@@ -62,7 +213,7 @@ class GymApp:
         # Título
         titulo = ttk.Label(
             self.main_frame, 
-            text="🏋️ GymForTheMoment - Sistema de Gestión",
+            text="GymForTheMoment - Sistema de Gestion",
             style='Title.TLabel'
         )
         titulo.pack(pady=(0, 10))
@@ -79,12 +230,15 @@ class GymApp:
         self.tab_pagos = ttk.Frame(self.notebook, padding="10")
         self.tab_morosos = ttk.Frame(self.notebook, padding="10")
         
-        self.notebook.add(self.tab_clientes, text="👥 Clientes")
-        self.notebook.add(self.tab_aparatos, text="🏃 Aparatos")
-        self.notebook.add(self.tab_reservas, text="📅 Reservas")
-        self.notebook.add(self.tab_ocupacion, text="📊 Ocupación")
-        self.notebook.add(self.tab_pagos, text="💰 Pagos")
-        self.notebook.add(self.tab_morosos, text="⚠️ Morosos")
+        self.notebook.add(self.tab_clientes, text="Clientes")
+        self.notebook.add(self.tab_aparatos, text="Aparatos")
+        self.notebook.add(self.tab_reservas, text="Reservas")
+        self.notebook.add(self.tab_ocupacion, text="Ocupacion")
+        self.notebook.add(self.tab_pagos, text="Pagos")
+        self.notebook.add(self.tab_morosos, text="Morosos")
+        
+        # Barra de estado (crear antes de configurar pestañas)
+        self.status_var = tk.StringVar(value=f"Usuario: {self.usuario['nombre']} ({self.usuario['rol']}) | Listo")
         
         # Configurar cada pestaña
         self.configurar_tab_clientes()
@@ -93,9 +247,6 @@ class GymApp:
         self.configurar_tab_ocupacion()
         self.configurar_tab_pagos()
         self.configurar_tab_morosos()
-        
-        # Barra de estado
-        self.status_var = tk.StringVar(value="Listo")
         self.status_bar = ttk.Label(
             self.main_frame, 
             textvariable=self.status_var,
@@ -161,10 +312,10 @@ class GymApp:
         frame_botones = ttk.Frame(frame_form)
         frame_botones.grid(row=5, column=0, columnspan=2, pady=10)
         
-        ttk.Button(frame_botones, text="➕ Nuevo", command=self.nuevo_cliente).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="💾 Guardar", command=self.guardar_cliente).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="🗑️ Eliminar", command=self.eliminar_cliente).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="🔄 Refrescar", command=self.cargar_clientes).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_botones, text="+ Nuevo", command=self.nuevo_cliente).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_botones, text="Guardar", command=self.guardar_cliente).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_botones, text="Eliminar", command=self.eliminar_cliente).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_botones, text="Refrescar", command=self.cargar_clientes).pack(side=tk.LEFT, padx=2)
         
         # Evento de selección
         self.tree_clientes.bind('<<TreeviewSelect>>', self.seleccionar_cliente)
@@ -321,10 +472,10 @@ class GymApp:
         frame_botones = ttk.Frame(frame_form)
         frame_botones.grid(row=3, column=0, columnspan=2, pady=10)
         
-        ttk.Button(frame_botones, text="➕ Nuevo", command=self.nuevo_aparato).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="💾 Guardar", command=self.guardar_aparato).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="🗑️ Eliminar", command=self.eliminar_aparato).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="🔄 Refrescar", command=self.cargar_aparatos).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_botones, text="+ Nuevo", command=self.nuevo_aparato).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_botones, text="Guardar", command=self.guardar_aparato).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_botones, text="Eliminar", command=self.eliminar_aparato).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_botones, text="Refrescar", command=self.cargar_aparatos).pack(side=tk.LEFT, padx=2)
         
         self.tree_aparatos.bind('<<TreeviewSelect>>', self.seleccionar_aparato)
         self.aparato_seleccionado_id = None
@@ -437,7 +588,7 @@ class GymApp:
         self.combo_reserva_hora.grid(row=0, column=7, padx=5)
         
         # Botón reservar
-        ttk.Button(frame_nueva, text="📅 Reservar", command=self.realizar_reserva).grid(row=0, column=8, padx=10)
+        ttk.Button(frame_nueva, text="Reservar", command=self.realizar_reserva).grid(row=0, column=8, padx=10)
         
         # Frame inferior: Lista de reservas
         frame_lista = ttk.LabelFrame(self.tab_reservas, text="Reservas Actuales", padding="5")
@@ -454,7 +605,7 @@ class GymApp:
         self.combo_filtro_dia.pack(side=tk.LEFT, padx=5)
         self.combo_filtro_dia.bind('<<ComboboxSelected>>', self.filtrar_reservas)
         
-        ttk.Button(frame_filtro, text="🗑️ Cancelar Reserva", command=self.cancelar_reserva).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(frame_filtro, text="Cancelar Reserva", command=self.cancelar_reserva).pack(side=tk.RIGHT, padx=5)
         
         # Treeview
         columns = ('ID', 'Cliente', 'Aparato', 'Día', 'Hora Inicio', 'Hora Fin')
@@ -582,19 +733,30 @@ class GymApp:
     def configurar_tab_ocupacion(self):
         """Configura la pestaña de ocupación de aparatos"""
         
-        # Frame superior: Selector de día
+        # Frame superior: Selectores
         frame_selector = ttk.Frame(self.tab_ocupacion)
         frame_selector.pack(fill=tk.X, pady=10)
         
-        ttk.Label(frame_selector, text="Seleccione día de la semana:", 
+        # Selector de día
+        ttk.Label(frame_selector, text="Dia:", 
                   style='Subtitle.TLabel').pack(side=tk.LEFT, padx=10)
         
-        self.combo_ocupacion_dia = ttk.Combobox(frame_selector, width=15, state='readonly')
+        self.combo_ocupacion_dia = ttk.Combobox(frame_selector, width=12, state='readonly')
         self.combo_ocupacion_dia['values'] = list(DIAS_SEMANA.values())
-        self.combo_ocupacion_dia.pack(side=tk.LEFT, padx=10)
+        self.combo_ocupacion_dia.pack(side=tk.LEFT, padx=5)
         
-        ttk.Button(frame_selector, text="📊 Ver Ocupación", 
-                   command=self.mostrar_ocupacion).pack(side=tk.LEFT, padx=10)
+        # Selector de tipo de aparato
+        ttk.Label(frame_selector, text="Tipo de Aparato:", 
+                  style='Subtitle.TLabel').pack(side=tk.LEFT, padx=20)
+        
+        self.combo_ocupacion_tipo = ttk.Combobox(frame_selector, width=15, state='readonly')
+        self.combo_ocupacion_tipo['values'] = ['Todos', 'Cardio', 'Musculación', 'Funcional', 'Otro']
+        self.combo_ocupacion_tipo.set('Todos')
+        self.combo_ocupacion_tipo.pack(side=tk.LEFT, padx=5)
+        
+        # Botón ver ocupación
+        ttk.Button(frame_selector, text="Ver Ocupacion", 
+                   command=self.mostrar_ocupacion).pack(side=tk.LEFT, padx=20)
         
         # Frame para el listado
         frame_lista = ttk.LabelFrame(self.tab_ocupacion, text="Ocupación de Aparatos", padding="5")
@@ -616,9 +778,17 @@ class GymApp:
         self.tree_ocupacion.column('Estado', width=100)
         self.tree_ocupacion.column('Cliente', width=200)
         
-        # Tags para colores
-        self.tree_ocupacion.tag_configure('ocupado', background='#ffcccc')
-        self.tree_ocupacion.tag_configure('libre', background='#ccffcc')
+        # Tags para colores - tonos oscuros y suaves
+        self.tree_ocupacion.tag_configure('ocupado', 
+                                         background='#4a2020',  # Rojo muy oscuro
+                                         foreground='#ffcccc')  # Texto claro
+        self.tree_ocupacion.tag_configure('libre', 
+                                         background='#1a3a1a',  # Verde muy oscuro
+                                         foreground='#ccffcc')  # Texto claro
+        self.tree_ocupacion.tag_configure('separador', 
+                                         background=self.COLOR_AMARILLO,  # Amarillo
+                                         foreground=self.COLOR_NEGRO,     # Negro
+                                         font=('Arial', 9, 'bold'))
         
         scrollbar = ttk.Scrollbar(frame_lista, orient=tk.VERTICAL, command=self.tree_ocupacion.yview)
         self.tree_ocupacion.configure(yscrollcommand=scrollbar.set)
@@ -629,6 +799,7 @@ class GymApp:
     def mostrar_ocupacion(self):
         """Muestra la ocupación de aparatos para el día seleccionado"""
         dia_sel = self.combo_ocupacion_dia.get()
+        tipo_sel = self.combo_ocupacion_tipo.get()
         
         if not dia_sel:
             messagebox.showwarning("Aviso", "Seleccione un día de la semana")
@@ -646,27 +817,45 @@ class GymApp:
         
         total_franjas = 0
         franjas_ocupadas = 0
+        aparatos_mostrados = 0
         
-        for aparato in ocupacion:
+        for idx, aparato in enumerate(ocupacion):
+            # Filtrar por tipo de aparato si no es "Todos"
+            if tipo_sel != 'Todos' and aparato['aparato_tipo'] != tipo_sel:
+                continue
+            
+            aparatos_mostrados += 1
+            
+            # Añadir fila separadora con nombre del aparato
+            self.tree_ocupacion.insert('', tk.END, values=(
+                f"═══ {aparato['aparato_nombre']} ═══",
+                aparato['aparato_tipo'],
+                "═══════",
+                "═══════",
+                "═══════════════"
+            ), tags=('separador',))
+            
             for franja in aparato['franjas']:
                 total_franjas += 1
-                estado = "🔴 OCUPADO" if franja['ocupado'] else "🟢 LIBRE"
+                estado = "OCUPADO" if franja['ocupado'] else "LIBRE"
                 cliente = franja['cliente'] or "-"
                 tag = 'ocupado' if franja['ocupado'] else 'libre'
                 
                 if franja['ocupado']:
                     franjas_ocupadas += 1
                 
+                # Mostrar el nombre del aparato solo para referencia visual
                 self.tree_ocupacion.insert('', tk.END, values=(
-                    aparato['aparato_nombre'],
-                    aparato['aparato_tipo'],
+                    "",  # Dejamos vacío para que no se repita
+                    "",  # Tipo vacío también
                     franja['hora'],
                     estado,
                     cliente
                 ), tags=(tag,))
         
         porcentaje = (franjas_ocupadas / total_franjas * 100) if total_franjas > 0 else 0
-        self.status_var.set(f"Ocupación del {dia_sel}: {franjas_ocupadas}/{total_franjas} franjas ocupadas ({porcentaje:.1f}%)")
+        filtro_texto = f" ({tipo_sel})" if tipo_sel != 'Todos' else ""
+        self.status_var.set(f"Ocupación del {dia_sel}{filtro_texto}: {franjas_ocupadas}/{total_franjas} franjas - {aparatos_mostrados} aparatos mostrados ({porcentaje:.1f}%)")
     
     # ==================== PESTAÑA PAGOS ====================
     
@@ -690,7 +879,7 @@ class GymApp:
         
         ttk.Label(frame_generar, text=f"Importe: {formatear_moneda(MENSUALIDAD)}").grid(row=0, column=4, padx=20)
         
-        ttk.Button(frame_generar, text="📝 Generar Recibos", 
+        ttk.Button(frame_generar, text="Generar Recibos", 
                    command=self.generar_recibos).grid(row=0, column=5, padx=10)
         
         # Frame medio: Registrar pago
@@ -722,11 +911,11 @@ class GymApp:
         frame_btn_pago = ttk.Frame(self.tab_pagos)
         frame_btn_pago.pack(fill=tk.X)
         
-        ttk.Button(frame_btn_pago, text="✅ Registrar Pago", 
+        ttk.Button(frame_btn_pago, text="Registrar Pago", 
                    command=self.registrar_pago).pack(side=tk.LEFT, padx=5)
-        ttk.Button(frame_btn_pago, text="🔄 Actualizar Lista", 
+        ttk.Button(frame_btn_pago, text="Actualizar Lista", 
                    command=self.cargar_recibos_pendientes).pack(side=tk.LEFT, padx=5)
-        ttk.Button(frame_btn_pago, text="📋 Ver Clientes Pagados", 
+        ttk.Button(frame_btn_pago, text="Ver Clientes Pagados", 
                    command=self.ver_clientes_pagados).pack(side=tk.RIGHT, padx=5)
         
         # Cargar recibos
@@ -763,7 +952,7 @@ class GymApp:
                 mes_nombre,
                 recibo['anio'],
                 formatear_moneda(recibo['importe']),
-                "⏳ Pendiente"
+                "Pendiente"
             ))
         
         self.status_var.set(f"{len(recibos)} recibos pendientes de pago")
@@ -797,7 +986,7 @@ class GymApp:
         ventana.title("Clientes al Corriente de Pago")
         ventana.geometry("500x400")
         
-        ttk.Label(ventana, text="✅ Clientes al Corriente de Pago", 
+        ttk.Label(ventana, text="Clientes al Corriente de Pago", 
                   style='Subtitle.TLabel').pack(pady=10)
         
         # Lista
@@ -815,11 +1004,11 @@ class GymApp:
         """Configura la pestaña de clientes morosos"""
         
         # Título
-        ttk.Label(self.tab_morosos, text="⚠️ Lista de Clientes Morosos",
+        ttk.Label(self.tab_morosos, text="Lista de Clientes Morosos",
                   style='Title.TLabel').pack(pady=10)
         
         # Botón actualizar
-        ttk.Button(self.tab_morosos, text="🔄 Actualizar Lista",
+        ttk.Button(self.tab_morosos, text="Actualizar Lista",
                    command=self.cargar_morosos).pack(pady=5)
         
         # Frame lista
@@ -846,8 +1035,10 @@ class GymApp:
         self.tree_morosos.column('Recibos Pendientes', width=120)
         self.tree_morosos.column('Total Adeudado', width=120)
         
-        # Tag para resaltar
-        self.tree_morosos.tag_configure('moroso', background='#ffcccc')
+        # Tag para resaltar - tono oscuro suave
+        self.tree_morosos.tag_configure('moroso', 
+                                        background='#4a2020',  # Rojo muy oscuro
+                                        foreground='#ffcccc')  # Texto claro
         
         scrollbar = ttk.Scrollbar(frame_lista, orient=tk.VERTICAL, command=self.tree_morosos.yview)
         self.tree_morosos.configure(yscrollcommand=scrollbar.set)
@@ -889,6 +1080,51 @@ class GymApp:
     
     # ==================== UTILIDADES ====================
     
+    def mostrar_acerca_de(self):
+        """Muestra información sobre la aplicación"""
+        ventana = tk.Toplevel(self.root)
+        ventana.title("Acerca de")
+        ventana.geometry("400x350")
+        ventana.resizable(False, False)
+        ventana.configure(bg=self.COLOR_NEGRO)
+        
+        # Contenido
+        frame = ttk.Frame(ventana, padding="20")
+        frame.pack(fill=tk.BOTH, expand=True)
+        
+        ttk.Label(frame, text="GymForTheMoment", 
+                  style='Title.TLabel').pack(pady=10)
+        
+        ttk.Label(frame, text="Sistema de Gestion de Gimnasio",
+                  style='Subtitle.TLabel').pack(pady=5)
+        
+        ttk.Label(frame, text=f"\nVersion: 1.0\n",
+                  font=('Arial', 10)).pack()
+        
+        # Mostrar usuario actual
+        ttk.Label(frame, text=f"Usuario: {self.usuario['nombre']}",
+                  font=('Arial', 9, 'bold')).pack()
+        ttk.Label(frame, text=f"Rol: {self.usuario['rol'].capitalize()}",
+                  font=('Arial', 9)).pack(pady=(0, 10))
+        
+        info_text = """
+        Funcionalidades:
+        • Gestion de clientes
+        • Gestion de aparatos
+        • Reservas de sesiones (30 min)
+        • Control de ocupacion por dia
+        • Gestion de pagos mensuales
+        • Control de clientes morosos
+        
+        Horario: 24 horas
+        Dias: Lunes a Viernes
+        """
+        
+        ttk.Label(frame, text=info_text,
+                  font=('Arial', 9), justify=tk.LEFT).pack(pady=10)
+        
+        ttk.Button(frame, text="Cerrar", command=ventana.destroy).pack(pady=10)
+    
     def on_closing(self):
         """Maneja el cierre de la aplicación"""
         if messagebox.askokcancel("Salir", "¿Desea salir de la aplicación?"):
@@ -896,13 +1132,15 @@ class GymApp:
             self.root.destroy()
 
 
-def main():
+def main(usuario):
     """Función principal"""
     root = tk.Tk()
-    app = GymApp(root)
+    app = GymApp(root, usuario)
     root.protocol("WM_DELETE_WINDOW", app.on_closing)
     root.mainloop()
 
 
 if __name__ == "__main__":
-    main()
+    # Si se ejecuta directamente, mostrar error
+    print("Error: Debe ejecutar la aplicacion desde main.py")
+    print("Use: python src/main.py")

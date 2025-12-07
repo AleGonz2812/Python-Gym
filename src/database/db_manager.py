@@ -66,6 +66,19 @@ class DatabaseManager:
     def create_tables(self):
         """Crea todas las tablas necesarias en la base de datos"""
         
+        # Tabla USUARIO (para login)
+        self.execute_query("""
+            CREATE TABLE IF NOT EXISTS usuario (
+                id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre VARCHAR(50) NOT NULL,
+                email VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                rol VARCHAR(20) DEFAULT 'empleado',
+                activo BOOLEAN DEFAULT 1,
+                fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
         # Tabla CLIENTE
         self.execute_query("""
             CREATE TABLE IF NOT EXISTS cliente (
@@ -130,6 +143,54 @@ class DatabaseManager:
         self.execute_query("CREATE INDEX IF NOT EXISTS idx_recibo_cliente ON recibo(id_cliente)")
         
         print("Tablas creadas correctamente")
+    
+    # ==================== OPERACIONES CON USUARIOS ====================
+    
+    def crear_usuario(self, nombre: str, email: str, password: str, rol: str = 'empleado') -> Optional[int]:
+        """
+        Crea un nuevo usuario.
+        NOTA: En producción, la contraseña debería ser hasheada con bcrypt o similar.
+        """
+        query = """
+            INSERT INTO usuario (nombre, email, password, rol, activo)
+            VALUES (?, ?, ?, ?, 1)
+        """
+        result = self.execute_query(query, (nombre, email, password, rol))
+        if result:
+            return self.cursor.lastrowid
+        return None
+    
+    def validar_usuario(self, email: str, password: str) -> Optional[sqlite3.Row]:
+        """Valida las credenciales de un usuario"""
+        query = """
+            SELECT * FROM usuario 
+            WHERE email = ? AND password = ? AND activo = 1
+        """
+        self.execute_query(query, (email, password))
+        return self.cursor.fetchone()
+    
+    def existe_usuario(self, email: str) -> bool:
+        """Verifica si existe un usuario con ese email"""
+        query = "SELECT COUNT(*) FROM usuario WHERE email = ?"
+        self.execute_query(query, (email,))
+        return self.cursor.fetchone()[0] > 0
+    
+    def existe_admin(self) -> bool:
+        """Verifica si ya existe un administrador"""
+        query = "SELECT COUNT(*) FROM usuario WHERE rol = 'admin'"
+        self.execute_query(query)
+        return self.cursor.fetchone()[0] > 0
+    
+    def crear_admin_inicial(self):
+        """Crea el usuario administrador por defecto si no existe"""
+        if not self.existe_admin():
+            self.crear_usuario(
+                nombre="Administrador",
+                email="admin@gymforthemoment.com",
+                password="admin123",
+                rol="admin"
+            )
+            print("Usuario administrador creado: admin@gymforthemoment.com / admin123")
     
     # ==================== OPERACIONES CON CLIENTES ====================
     
