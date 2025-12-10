@@ -28,6 +28,7 @@ class GymApp:
     def __init__(self, root, usuario):
         self.root = root
         self.usuario = usuario  # Guardar info del usuario autenticado
+        self.cerro_sesion = False  # Flag para saber si cerró sesión o salió
         self.root.title("GymForTheMoment - Sistema de Gestion")
         self.root.geometry("1200x700")
         self.root.minsize(1000, 600)
@@ -183,7 +184,8 @@ class GymApp:
         self.crear_interfaz()
         
         # Cargar datos iniciales
-        self.cargar_clientes()
+        if self.usuario['rol'] == 'admin':
+            self.cargar_clientes()
         self.cargar_aparatos()
         
     def crear_interfaz(self):
@@ -210,13 +212,34 @@ class GymApp:
         self.main_frame = ttk.Frame(self.root, padding="10")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
         
+        # Frame superior para título y botón cerrar sesión
+        frame_header = ttk.Frame(self.main_frame)
+        frame_header.pack(fill=tk.X, pady=(0, 10))
+        
         # Título
         titulo = ttk.Label(
-            self.main_frame, 
+            frame_header, 
             text="GymForTheMoment - Sistema de Gestion",
             style='Title.TLabel'
         )
-        titulo.pack(pady=(0, 10))
+        titulo.pack(side=tk.LEFT)
+        
+        # Botón cerrar sesión (en la esquina superior derecha)
+        btn_cerrar_sesion = tk.Button(
+            frame_header,
+            text="Cerrar Sesion",
+            font=('Arial', 10, 'bold'),
+            bg=self.COLOR_ROJO,
+            fg=self.COLOR_BLANCO,
+            activebackground='#FF1744',
+            command=self.cerrar_sesion,
+            cursor='hand2',
+            relief=tk.FLAT,
+            bd=0,
+            padx=20,
+            pady=8
+        )
+        btn_cerrar_sesion.pack(side=tk.RIGHT)
         
         # Notebook (pestañas)
         self.notebook = ttk.Notebook(self.main_frame)
@@ -230,7 +253,10 @@ class GymApp:
         self.tab_pagos = ttk.Frame(self.notebook, padding="10")
         self.tab_morosos = ttk.Frame(self.notebook, padding="10")
         
-        self.notebook.add(self.tab_clientes, text="Clientes")
+        # Solo mostrar tab Clientes si es admin
+        if self.usuario['rol'] == 'admin':
+            self.notebook.add(self.tab_clientes, text="Clientes")
+        
         self.notebook.add(self.tab_aparatos, text="Aparatos")
         self.notebook.add(self.tab_reservas, text="Reservas")
         self.notebook.add(self.tab_ocupacion, text="Ocupacion")
@@ -241,7 +267,8 @@ class GymApp:
         self.status_var = tk.StringVar(value=f"Usuario: {self.usuario['nombre']} ({self.usuario['rol']}) | Listo")
         
         # Configurar cada pestaña
-        self.configurar_tab_clientes()
+        if self.usuario['rol'] == 'admin':
+            self.configurar_tab_clientes()
         self.configurar_tab_aparatos()
         self.configurar_tab_reservas()
         self.configurar_tab_ocupacion()
@@ -258,23 +285,51 @@ class GymApp:
     # ==================== PESTAÑA CLIENTES ====================
     
     def configurar_tab_clientes(self):
-        """Configura la pestaña de gestión de clientes"""
+        """Configura la pestaña de gestión de clientes (solo admin - solo eliminar)"""
         
-        # Frame izquierdo: Lista de clientes
-        frame_lista = ttk.LabelFrame(self.tab_clientes, text="Lista de Clientes", padding="5")
-        frame_lista.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        # Título informativo
+        info_label = tk.Label(
+            self.tab_clientes,
+            text="Gestión de Clientes - Solo Administrador",
+            font=('Arial', 12, 'bold'),
+            bg=self.COLOR_GRIS,
+            fg=self.COLOR_AMARILLO
+        )
+        info_label.pack(pady=(0, 10))
+        
+        info_text = tk.Label(
+            self.tab_clientes,
+            text="Los clientes se crean automáticamente al registrarse.\nAquí solo puedes eliminarlos si es necesario.",
+            font=('Arial', 9),
+            bg=self.COLOR_GRIS,
+            fg=self.COLOR_TEXTO,
+            justify=tk.CENTER
+        )
+        info_text.pack(pady=(0, 15))
+        
+        # Frame para la lista
+        frame_lista = ttk.LabelFrame(self.tab_clientes, text="Lista de Clientes Registrados", padding="10")
+        frame_lista.pack(fill=tk.BOTH, expand=True, padx=20, pady=(0, 10))
         
         # Treeview para clientes
-        columns = ('ID', 'Nombre', 'Apellidos', 'DNI', 'Teléfono', 'Email')
-        self.tree_clientes = ttk.Treeview(frame_lista, columns=columns, show='headings', height=15)
+        columns = ('ID', 'Nombre', 'Apellidos', 'DNI', 'Teléfono', 'Email', 'Fecha Alta')
+        self.tree_clientes = ttk.Treeview(frame_lista, columns=columns, show='headings', height=20)
         
-        for col in columns:
-            self.tree_clientes.heading(col, text=col)
-            self.tree_clientes.column(col, width=100)
+        self.tree_clientes.heading('ID', text='ID')
+        self.tree_clientes.heading('Nombre', text='Nombre')
+        self.tree_clientes.heading('Apellidos', text='Apellidos')
+        self.tree_clientes.heading('DNI', text='DNI')
+        self.tree_clientes.heading('Teléfono', text='Teléfono')
+        self.tree_clientes.heading('Email', text='Email')
+        self.tree_clientes.heading('Fecha Alta', text='Fecha Alta')
         
-        self.tree_clientes.column('ID', width=50)
-        self.tree_clientes.column('Nombre', width=100)
+        self.tree_clientes.column('ID', width=50, anchor=tk.CENTER)
+        self.tree_clientes.column('Nombre', width=120)
         self.tree_clientes.column('Apellidos', width=150)
+        self.tree_clientes.column('DNI', width=100, anchor=tk.CENTER)
+        self.tree_clientes.column('Teléfono', width=110, anchor=tk.CENTER)
+        self.tree_clientes.column('Email', width=200)
+        self.tree_clientes.column('Fecha Alta', width=100, anchor=tk.CENTER)
         
         # Scrollbar
         scrollbar = ttk.Scrollbar(frame_lista, orient=tk.VERTICAL, command=self.tree_clientes.yview)
@@ -283,45 +338,49 @@ class GymApp:
         self.tree_clientes.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-        # Frame derecho: Formulario
-        frame_form = ttk.LabelFrame(self.tab_clientes, text="Datos del Cliente", padding="10")
-        frame_form.pack(side=tk.RIGHT, fill=tk.Y, padx=(5, 0))
+        # Frame para botones
+        frame_botones = ttk.Frame(self.tab_clientes)
+        frame_botones.pack(pady=10)
         
-        # Campos del formulario
-        ttk.Label(frame_form, text="Nombre:").grid(row=0, column=0, sticky=tk.W, pady=2)
-        self.entry_nombre = ttk.Entry(frame_form, width=25)
-        self.entry_nombre.grid(row=0, column=1, pady=2)
+        btn_eliminar = tk.Button(
+            frame_botones,
+            text="ELIMINAR CLIENTE SELECCIONADO",
+            font=('Arial', 10, 'bold'),
+            bg=self.COLOR_ROJO,
+            fg=self.COLOR_BLANCO,
+            activebackground='#FF1744',
+            command=self.eliminar_cliente,
+            cursor='hand2',
+            relief=tk.FLAT,
+            bd=0
+        )
+        btn_eliminar.pack(side=tk.LEFT, padx=5, ipadx=15, ipady=8)
         
-        ttk.Label(frame_form, text="Apellidos:").grid(row=1, column=0, sticky=tk.W, pady=2)
-        self.entry_apellidos = ttk.Entry(frame_form, width=25)
-        self.entry_apellidos.grid(row=1, column=1, pady=2)
-        
-        ttk.Label(frame_form, text="DNI:").grid(row=2, column=0, sticky=tk.W, pady=2)
-        self.entry_dni = ttk.Entry(frame_form, width=25)
-        self.entry_dni.grid(row=2, column=1, pady=2)
-        
-        ttk.Label(frame_form, text="Teléfono:").grid(row=3, column=0, sticky=tk.W, pady=2)
-        self.entry_telefono = ttk.Entry(frame_form, width=25)
-        self.entry_telefono.grid(row=3, column=1, pady=2)
-        
-        ttk.Label(frame_form, text="Email:").grid(row=4, column=0, sticky=tk.W, pady=2)
-        self.entry_email = ttk.Entry(frame_form, width=25)
-        self.entry_email.grid(row=4, column=1, pady=2)
-        
-        # Botones
-        frame_botones = ttk.Frame(frame_form)
-        frame_botones.grid(row=5, column=0, columnspan=2, pady=10)
-        
-        ttk.Button(frame_botones, text="+ Nuevo", command=self.nuevo_cliente).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="Guardar", command=self.guardar_cliente).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="Eliminar", command=self.eliminar_cliente).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="Refrescar", command=self.cargar_clientes).pack(side=tk.LEFT, padx=2)
-        
-        # Evento de selección
-        self.tree_clientes.bind('<<TreeviewSelect>>', self.seleccionar_cliente)
+        btn_refrescar = tk.Button(
+            frame_botones,
+            text="REFRESCAR",
+            font=('Arial', 10),
+            bg=self.COLOR_GRIS_CLARO,
+            fg=self.COLOR_BLANCO,
+            activebackground=self.COLOR_GRIS,
+            command=self.cargar_clientes,
+            cursor='hand2',
+            relief=tk.FLAT,
+            bd=0
+        )
+        btn_refrescar.pack(side=tk.LEFT, padx=5, ipadx=15, ipady=8)
         
         # Variable para ID seleccionado
         self.cliente_seleccionado_id = None
+        self.tree_clientes.bind('<<TreeviewSelect>>', self.seleccionar_cliente_simple)
+    
+    def seleccionar_cliente_simple(self, event):
+        """Maneja la selección de un cliente"""
+        selection = self.tree_clientes.selection()
+        if selection:
+            item = self.tree_clientes.item(selection[0])
+            values = item['values']
+            self.cliente_seleccionado_id = values[0]
     
     def cargar_clientes(self):
         """Carga los clientes en el treeview"""
@@ -339,10 +398,11 @@ class GymApp:
                 cliente['apellidos'],
                 cliente['dni'],
                 cliente['telefono'] or '',
-                cliente['email'] or ''
+                cliente['email'] or '',
+                cliente['fecha_alta'][:10] if cliente['fecha_alta'] else ''
             ))
         
-        self.status_var.set(f"Se cargaron {len(clientes)} clientes")
+        self.status_var.set(f"Usuario: {self.usuario['nombre']} ({self.usuario['rol']}) | {len(clientes)} clientes registrados")
     
     def seleccionar_cliente(self, event):
         """Maneja la selección de un cliente en el treeview"""
@@ -363,122 +423,137 @@ class GymApp:
             self.entry_email.delete(0, tk.END)
             self.entry_email.insert(0, values[5])
     
-    def nuevo_cliente(self):
-        """Limpia el formulario para un nuevo cliente"""
-        self.cliente_seleccionado_id = None
-        self.entry_nombre.delete(0, tk.END)
-        self.entry_apellidos.delete(0, tk.END)
-        self.entry_dni.delete(0, tk.END)
-        self.entry_telefono.delete(0, tk.END)
-        self.entry_email.delete(0, tk.END)
-        self.entry_nombre.focus()
-    
-    def guardar_cliente(self):
-        """Guarda o actualiza un cliente"""
-        nombre = self.entry_nombre.get().strip()
-        apellidos = self.entry_apellidos.get().strip()
-        dni = self.entry_dni.get().strip().upper()
-        telefono = self.entry_telefono.get().strip()
-        email = self.entry_email.get().strip()
-        
-        # Validaciones
-        if not nombre or not apellidos or not dni:
-            messagebox.showerror("Error", "Nombre, apellidos y DNI son obligatorios")
-            return
-        
-        if not validar_email(email):
-            messagebox.showerror("Error", "El formato del email no es válido")
-            return
-        
-        try:
-            if self.cliente_seleccionado_id:
-                # Actualizar
-                if self.db.actualizar_cliente(
-                    self.cliente_seleccionado_id, nombre, apellidos, dni, telefono, email
-                ):
-                    messagebox.showinfo("Éxito", "Cliente actualizado correctamente")
-                    self.cargar_clientes()
-                else:
-                    messagebox.showerror("Error", "No se pudo actualizar el cliente")
-            else:
-                # Insertar nuevo
-                id_nuevo = self.db.insertar_cliente(nombre, apellidos, dni, telefono, email)
-                if id_nuevo:
-                    messagebox.showinfo("Éxito", f"Cliente creado con ID: {id_nuevo}")
-                    self.cargar_clientes()
-                    self.nuevo_cliente()
-                else:
-                    messagebox.showerror("Error", "No se pudo crear el cliente. ¿El DNI ya existe?")
-        except Exception as e:
-            messagebox.showerror("Error", f"Error al guardar: {str(e)}")
     
     def eliminar_cliente(self):
-        """Elimina el cliente seleccionado"""
+        """Elimina el cliente seleccionado (solo admin)"""
         if not self.cliente_seleccionado_id:
-            messagebox.showwarning("Aviso", "Seleccione un cliente para eliminar")
+            messagebox.showwarning("Aviso", "Seleccione un cliente de la lista para eliminar")
             return
         
-        if messagebox.askyesno("Confirmar", "¿Está seguro de eliminar este cliente?"):
+        # Obtener info del cliente
+        selection = self.tree_clientes.selection()
+        if not selection:
+            return
+            
+        item = self.tree_clientes.item(selection[0])
+        values = item['values']
+        nombre_completo = f"{values[1]} {values[2]}"
+        
+        if messagebox.askyesno("Confirmar Eliminación", 
+                              f"¿Está seguro de eliminar al cliente?\n\n"
+                              f"Nombre: {nombre_completo}\n"
+                              f"DNI: {values[3]}\n\n"
+                              f"Esta acción no se puede deshacer."):
             if self.db.eliminar_cliente(self.cliente_seleccionado_id):
                 messagebox.showinfo("Éxito", "Cliente eliminado correctamente")
+                self.cliente_seleccionado_id = None
                 self.cargar_clientes()
-                self.nuevo_cliente()
             else:
-                messagebox.showerror("Error", "No se pudo eliminar el cliente")
+                messagebox.showerror("Error", "No se pudo eliminar el cliente.\n"
+                                   "Puede tener reservas o pagos asociados.")
     
     # ==================== PESTAÑA APARATOS ====================
     
     def configurar_tab_aparatos(self):
         """Configura la pestaña de gestión de aparatos"""
         
-        # Frame izquierdo: Lista
-        frame_lista = ttk.LabelFrame(self.tab_aparatos, text="Lista de Aparatos", padding="5")
-        frame_lista.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
-        
-        columns = ('ID', 'Nombre', 'Tipo', 'Descripción')
-        self.tree_aparatos = ttk.Treeview(frame_lista, columns=columns, show='headings', height=15)
-        
-        for col in columns:
-            self.tree_aparatos.heading(col, text=col)
-        
-        self.tree_aparatos.column('ID', width=50)
-        self.tree_aparatos.column('Nombre', width=150)
-        self.tree_aparatos.column('Tipo', width=100)
-        self.tree_aparatos.column('Descripción', width=200)
-        
-        scrollbar = ttk.Scrollbar(frame_lista, orient=tk.VERTICAL, command=self.tree_aparatos.yview)
-        self.tree_aparatos.configure(yscrollcommand=scrollbar.set)
-        
-        self.tree_aparatos.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # Frame derecho: Formulario
-        frame_form = ttk.LabelFrame(self.tab_aparatos, text="Datos del Aparato", padding="10")
-        frame_form.pack(side=tk.RIGHT, fill=tk.Y, padx=(5, 0))
-        
-        ttk.Label(frame_form, text="Nombre:").grid(row=0, column=0, sticky=tk.W, pady=2)
-        self.entry_aparato_nombre = ttk.Entry(frame_form, width=25)
-        self.entry_aparato_nombre.grid(row=0, column=1, pady=2)
-        
-        ttk.Label(frame_form, text="Tipo:").grid(row=1, column=0, sticky=tk.W, pady=2)
-        self.combo_tipo = ttk.Combobox(frame_form, width=22, values=['Cardio', 'Musculación', 'Funcional', 'Otro'])
-        self.combo_tipo.grid(row=1, column=1, pady=2)
-        
-        ttk.Label(frame_form, text="Descripción:").grid(row=2, column=0, sticky=tk.W, pady=2)
-        self.entry_aparato_desc = ttk.Entry(frame_form, width=25)
-        self.entry_aparato_desc.grid(row=2, column=1, pady=2)
-        
-        # Botones
-        frame_botones = ttk.Frame(frame_form)
-        frame_botones.grid(row=3, column=0, columnspan=2, pady=10)
-        
-        ttk.Button(frame_botones, text="+ Nuevo", command=self.nuevo_aparato).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="Guardar", command=self.guardar_aparato).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="Eliminar", command=self.eliminar_aparato).pack(side=tk.LEFT, padx=2)
-        ttk.Button(frame_botones, text="Refrescar", command=self.cargar_aparatos).pack(side=tk.LEFT, padx=2)
-        
-        self.tree_aparatos.bind('<<TreeviewSelect>>', self.seleccionar_aparato)
-        self.aparato_seleccionado_id = None
+        if self.usuario['rol'] == 'admin':
+            # MODO ADMIN: Con formulario de edición
+            # Frame izquierdo: Lista
+            frame_lista = ttk.LabelFrame(self.tab_aparatos, text="Lista de Aparatos", padding="5")
+            frame_lista.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+            
+            columns = ('ID', 'Nombre', 'Tipo', 'Descripción')
+            self.tree_aparatos = ttk.Treeview(frame_lista, columns=columns, show='headings', height=15)
+            
+            for col in columns:
+                self.tree_aparatos.heading(col, text=col)
+            
+            self.tree_aparatos.column('ID', width=50)
+            self.tree_aparatos.column('Nombre', width=150)
+            self.tree_aparatos.column('Tipo', width=100)
+            self.tree_aparatos.column('Descripción', width=200)
+            
+            scrollbar = ttk.Scrollbar(frame_lista, orient=tk.VERTICAL, command=self.tree_aparatos.yview)
+            self.tree_aparatos.configure(yscrollcommand=scrollbar.set)
+            
+            self.tree_aparatos.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            # Frame derecho: Formulario
+            frame_form = ttk.LabelFrame(self.tab_aparatos, text="Datos del Aparato", padding="10")
+            frame_form.pack(side=tk.RIGHT, fill=tk.Y, padx=(5, 0))
+            
+            ttk.Label(frame_form, text="Nombre:").grid(row=0, column=0, sticky=tk.W, pady=2)
+            self.entry_aparato_nombre = ttk.Entry(frame_form, width=25)
+            self.entry_aparato_nombre.grid(row=0, column=1, pady=2)
+            
+            ttk.Label(frame_form, text="Tipo:").grid(row=1, column=0, sticky=tk.W, pady=2)
+            self.combo_tipo = ttk.Combobox(frame_form, width=22, values=['Cardio', 'Musculación', 'Funcional'])
+            self.combo_tipo.grid(row=1, column=1, pady=2)
+            
+            ttk.Label(frame_form, text="Descripción:").grid(row=2, column=0, sticky=tk.W, pady=2)
+            self.entry_aparato_desc = ttk.Entry(frame_form, width=25)
+            self.entry_aparato_desc.grid(row=2, column=1, pady=2)
+            
+            # Botones
+            frame_botones = ttk.Frame(frame_form)
+            frame_botones.grid(row=3, column=0, columnspan=2, pady=10)
+            
+            ttk.Button(frame_botones, text="+ Nuevo", command=self.nuevo_aparato).pack(side=tk.LEFT, padx=2)
+            ttk.Button(frame_botones, text="Guardar", command=self.guardar_aparato).pack(side=tk.LEFT, padx=2)
+            ttk.Button(frame_botones, text="Eliminar", command=self.eliminar_aparato).pack(side=tk.LEFT, padx=2)
+            ttk.Button(frame_botones, text="Refrescar", command=self.cargar_aparatos).pack(side=tk.LEFT, padx=2)
+            
+            self.tree_aparatos.bind('<<TreeviewSelect>>', self.seleccionar_aparato)
+            self.aparato_seleccionado_id = None
+        else:
+            # MODO EMPLEADO: Solo lista de consulta
+            info_label = tk.Label(
+                self.tab_aparatos,
+                text="Aparatos Disponibles",
+                font=('Arial', 12, 'bold'),
+                bg=self.COLOR_GRIS,
+                fg=self.COLOR_AMARILLO
+            )
+            info_label.pack(pady=(0, 10))
+            
+            frame_lista = ttk.LabelFrame(self.tab_aparatos, text="Lista de Aparatos del Gimnasio", padding="10")
+            frame_lista.pack(fill=tk.BOTH, expand=True, padx=20, pady=(0, 10))
+            
+            columns = ('ID', 'Nombre', 'Tipo', 'Descripción')
+            self.tree_aparatos = ttk.Treeview(frame_lista, columns=columns, show='headings', height=25)
+            
+            self.tree_aparatos.heading('ID', text='ID')
+            self.tree_aparatos.heading('Nombre', text='Nombre')
+            self.tree_aparatos.heading('Tipo', text='Tipo')
+            self.tree_aparatos.heading('Descripción', text='Descripción')
+            
+            self.tree_aparatos.column('ID', width=60, anchor=tk.CENTER)
+            self.tree_aparatos.column('Nombre', width=200)
+            self.tree_aparatos.column('Tipo', width=150)
+            self.tree_aparatos.column('Descripción', width=400)
+            
+            scrollbar = ttk.Scrollbar(frame_lista, orient=tk.VERTICAL, command=self.tree_aparatos.yview)
+            self.tree_aparatos.configure(yscrollcommand=scrollbar.set)
+            
+            self.tree_aparatos.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            # Botón refrescar
+            btn_refrescar = tk.Button(
+                self.tab_aparatos,
+                text="REFRESCAR",
+                font=('Arial', 10),
+                bg=self.COLOR_GRIS_CLARO,
+                fg=self.COLOR_BLANCO,
+                activebackground=self.COLOR_GRIS,
+                command=self.cargar_aparatos,
+                cursor='hand2',
+                relief=tk.FLAT,
+                bd=0
+            )
+            btn_refrescar.pack(pady=10, ipadx=15, ipady=8)
     
     def cargar_aparatos(self):
         """Carga los aparatos en el treeview"""
@@ -561,34 +636,99 @@ class GymApp:
         """Configura la pestaña de reservas"""
         
         # Frame superior: Nueva reserva
-        frame_nueva = ttk.LabelFrame(self.tab_reservas, text="Nueva Reserva", padding="10")
+        frame_nueva = ttk.LabelFrame(self.tab_reservas, text="Nueva Reserva (puede seleccionar múltiples franjas horarias)", padding="10")
         frame_nueva.pack(fill=tk.X, pady=(0, 10))
         
+        # Fila 1: Cliente, Aparato, Día
+        frame_fila1 = ttk.Frame(frame_nueva)
+        frame_fila1.pack(fill=tk.X, pady=5)
+        
         # Cliente
-        ttk.Label(frame_nueva, text="Cliente:").grid(row=0, column=0, sticky=tk.W, padx=5)
-        self.combo_reserva_cliente = ttk.Combobox(frame_nueva, width=30, state='readonly')
-        self.combo_reserva_cliente.grid(row=0, column=1, padx=5)
+        ttk.Label(frame_fila1, text="Cliente:").pack(side=tk.LEFT, padx=5)
+        self.combo_reserva_cliente = ttk.Combobox(frame_fila1, width=35, state='readonly')
+        self.combo_reserva_cliente.pack(side=tk.LEFT, padx=5)
         
         # Aparato
-        ttk.Label(frame_nueva, text="Aparato:").grid(row=0, column=2, sticky=tk.W, padx=5)
-        self.combo_reserva_aparato = ttk.Combobox(frame_nueva, width=25, state='readonly')
-        self.combo_reserva_aparato.grid(row=0, column=3, padx=5)
+        ttk.Label(frame_fila1, text="Aparato:").pack(side=tk.LEFT, padx=15)
+        self.combo_reserva_aparato = ttk.Combobox(frame_fila1, width=30, state='readonly')
+        self.combo_reserva_aparato.pack(side=tk.LEFT, padx=5)
         
         # Día
-        ttk.Label(frame_nueva, text="Día:").grid(row=0, column=4, sticky=tk.W, padx=5)
-        self.combo_reserva_dia = ttk.Combobox(frame_nueva, width=12, state='readonly')
+        ttk.Label(frame_fila1, text="Día:").pack(side=tk.LEFT, padx=15)
+        self.combo_reserva_dia = ttk.Combobox(frame_fila1, width=12, state='readonly')
         self.combo_reserva_dia['values'] = list(DIAS_SEMANA.values())
-        self.combo_reserva_dia.grid(row=0, column=5, padx=5)
+        self.combo_reserva_dia.pack(side=tk.LEFT, padx=5)
         
-        # Hora
-        ttk.Label(frame_nueva, text="Hora:").grid(row=0, column=6, sticky=tk.W, padx=5)
-        self.combo_reserva_hora = ttk.Combobox(frame_nueva, width=12, state='readonly')
+        # Fila 2: Hora con Combobox y botón agregar
+        frame_fila2 = ttk.Frame(frame_nueva)
+        frame_fila2.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(frame_fila2, text="Hora:").pack(side=tk.LEFT, padx=5)
+        self.combo_reserva_hora = ttk.Combobox(frame_fila2, width=25, state='readonly')
         franjas = generar_franjas_horarias()
         self.combo_reserva_hora['values'] = [f[0] for f in franjas]
-        self.combo_reserva_hora.grid(row=0, column=7, padx=5)
+        self.combo_reserva_hora.pack(side=tk.LEFT, padx=5)
+        
+        # Botón agregar hora
+        tk.Button(
+            frame_fila2,
+            text="+ Agregar",
+            font=('Arial', 9, 'bold'),
+            bg=self.COLOR_GRIS_CLARO,
+            fg=self.COLOR_BLANCO,
+            activebackground=self.COLOR_GRIS,
+            command=self.agregar_hora_reserva,
+            cursor='hand2',
+            relief=tk.FLAT,
+            bd=0
+        ).pack(side=tk.LEFT, padx=5, ipadx=10, ipady=5)
+        
+        # Botón limpiar horas
+        tk.Button(
+            frame_fila2,
+            text="Limpiar",
+            font=('Arial', 9),
+            bg=self.COLOR_GRIS,
+            fg=self.COLOR_TEXTO,
+            activebackground=self.COLOR_GRIS_CLARO,
+            command=self.limpiar_horas_reserva,
+            cursor='hand2',
+            relief=tk.FLAT,
+            bd=0
+        ).pack(side=tk.LEFT, padx=5, ipadx=10, ipady=5)
+        
+        # Fila 3: Lista de horas seleccionadas
+        frame_fila3 = ttk.Frame(frame_nueva)
+        frame_fila3.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(frame_fila3, text="Horas seleccionadas:").pack(side=tk.LEFT, padx=5)
+        
+        # Listbox para mostrar horas agregadas
+        self.listbox_horas_seleccionadas = tk.Listbox(
+            frame_fila3,
+            height=3,
+            width=60,
+            bg=self.COLOR_GRIS_CLARO,
+            fg=self.COLOR_AMARILLO,
+            selectbackground=self.COLOR_ROJO,
+            selectforeground=self.COLOR_BLANCO,
+            font=('Arial', 9)
+        )
+        self.listbox_horas_seleccionadas.pack(side=tk.LEFT, padx=5)
         
         # Botón reservar
-        ttk.Button(frame_nueva, text="Reservar", command=self.realizar_reserva).grid(row=0, column=8, padx=10)
+        tk.Button(
+            frame_fila3,
+            text="RESERVAR",
+            font=('Arial', 10, 'bold'),
+            bg=self.COLOR_ROJO,
+            fg=self.COLOR_BLANCO,
+            activebackground='#FF1744',
+            command=self.realizar_reserva,
+            cursor='hand2',
+            relief=tk.FLAT,
+            bd=0
+        ).pack(side=tk.LEFT, padx=20, ipadx=20, ipady=8)
         
         # Frame inferior: Lista de reservas
         frame_lista = ttk.LabelFrame(self.tab_reservas, text="Reservas Actuales", padding="5")
@@ -679,15 +819,44 @@ class GymApp:
         else:
             self.cargar_reservas(dia)
     
+    def agregar_hora_reserva(self):
+        """Agrega una hora a la lista de horas seleccionadas"""
+        hora = self.combo_reserva_hora.get()
+        
+        if not hora:
+            messagebox.showwarning("Aviso", "Seleccione una hora primero")
+            return
+        
+        # Verificar que no esté duplicada
+        horas_actuales = self.listbox_horas_seleccionadas.get(0, tk.END)
+        if hora in horas_actuales:
+            messagebox.showwarning("Aviso", "Esta hora ya está en la lista")
+            return
+        
+        # Agregar a la lista
+        self.listbox_horas_seleccionadas.insert(tk.END, hora)
+        self.combo_reserva_hora.set('')  # Limpiar combobox
+    
+    def limpiar_horas_reserva(self):
+        """Limpia todas las horas seleccionadas"""
+        self.listbox_horas_seleccionadas.delete(0, tk.END)
+    
     def realizar_reserva(self):
-        """Realiza una nueva reserva"""
+        """Realiza una o múltiples reservas"""
         cliente_sel = self.combo_reserva_cliente.get()
         aparato_sel = self.combo_reserva_aparato.get()
         dia_sel = self.combo_reserva_dia.get()
-        hora_sel = self.combo_reserva_hora.get()
         
-        if not all([cliente_sel, aparato_sel, dia_sel, hora_sel]):
-            messagebox.showerror("Error", "Complete todos los campos")
+        # Obtener horas de la lista
+        num_horas = self.listbox_horas_seleccionadas.size()
+        horas_seleccionadas = [self.listbox_horas_seleccionadas.get(i) for i in range(num_horas)]
+        
+        if not all([cliente_sel, aparato_sel, dia_sel]):
+            messagebox.showerror("Error", "Complete cliente, aparato y día")
+            return
+        
+        if not horas_seleccionadas:
+            messagebox.showerror("Error", "Agregue al menos una hora con el botón '+ Agregar'")
             return
         
         # Extraer IDs
@@ -695,23 +864,37 @@ class GymApp:
         id_aparato = int(aparato_sel.split(' - ')[0])
         dia_num = [k for k, v in DIAS_SEMANA.items() if v == dia_sel][0]
         
-        # Verificar disponibilidad
-        if not self.db.verificar_disponibilidad(id_aparato, dia_num, hora_sel):
-            messagebox.showerror("Error", "El aparato ya está reservado en ese horario")
+        # Verificar disponibilidad de todas las franjas
+        no_disponibles = []
+        for hora in horas_seleccionadas:
+            if not self.db.verificar_disponibilidad(id_aparato, dia_num, hora):
+                no_disponibles.append(hora)
+        
+        if no_disponibles:
+            messagebox.showerror("Error", 
+                               f"Las siguientes franjas ya están ocupadas:\n" + 
+                               "\n".join(no_disponibles))
             return
         
-        # Realizar reserva
-        id_reserva = self.db.insertar_reserva(id_cliente, id_aparato, dia_num, hora_sel)
-        if id_reserva:
-            messagebox.showinfo("Éxito", f"Reserva creada correctamente (ID: {id_reserva})")
+        # Realizar todas las reservas
+        reservas_creadas = 0
+        for hora in horas_seleccionadas:
+            id_reserva = self.db.insertar_reserva(id_cliente, id_aparato, dia_num, hora)
+            if id_reserva:
+                reservas_creadas += 1
+        
+        if reservas_creadas > 0:
+            messagebox.showinfo("Éxito", 
+                              f"Se crearon {reservas_creadas} reserva(s) correctamente")
             self.cargar_reservas()
-            # Limpiar selección
+            # Limpiar campos
             self.combo_reserva_cliente.set('')
             self.combo_reserva_aparato.set('')
             self.combo_reserva_dia.set('')
             self.combo_reserva_hora.set('')
+            self.listbox_horas_seleccionadas.delete(0, tk.END)
         else:
-            messagebox.showerror("Error", "No se pudo crear la reserva")
+            messagebox.showerror("Error", "No se pudo crear ninguna reserva")
     
     def cancelar_reserva(self):
         """Cancela la reserva seleccionada"""
@@ -750,7 +933,7 @@ class GymApp:
                   style='Subtitle.TLabel').pack(side=tk.LEFT, padx=20)
         
         self.combo_ocupacion_tipo = ttk.Combobox(frame_selector, width=15, state='readonly')
-        self.combo_ocupacion_tipo['values'] = ['Todos', 'Cardio', 'Musculación', 'Funcional', 'Otro']
+        self.combo_ocupacion_tipo['values'] = ['Todos', 'Cardio', 'Musculación', 'Funcional']
         self.combo_ocupacion_tipo.set('Todos')
         self.combo_ocupacion_tipo.pack(side=tk.LEFT, padx=5)
         
@@ -862,64 +1045,139 @@ class GymApp:
     def configurar_tab_pagos(self):
         """Configura la pestaña de gestión de pagos"""
         
-        # Frame superior: Generar recibos
-        frame_generar = ttk.LabelFrame(self.tab_pagos, text="Generar Recibos del Mes", padding="10")
-        frame_generar.pack(fill=tk.X, pady=(0, 10))
-        
-        ttk.Label(frame_generar, text="Mes:").grid(row=0, column=0, padx=5)
-        self.combo_pago_mes = ttk.Combobox(frame_generar, width=15, state='readonly')
-        self.combo_pago_mes['values'] = list(MESES.values())
-        self.combo_pago_mes.set(MESES[obtener_mes_actual()])
-        self.combo_pago_mes.grid(row=0, column=1, padx=5)
-        
-        ttk.Label(frame_generar, text="Año:").grid(row=0, column=2, padx=5)
-        self.spin_pago_anio = ttk.Spinbox(frame_generar, from_=2020, to=2030, width=10)
-        self.spin_pago_anio.set(obtener_anio_actual())
-        self.spin_pago_anio.grid(row=0, column=3, padx=5)
-        
-        ttk.Label(frame_generar, text=f"Importe: {formatear_moneda(MENSUALIDAD)}").grid(row=0, column=4, padx=20)
-        
-        ttk.Button(frame_generar, text="Generar Recibos", 
-                   command=self.generar_recibos).grid(row=0, column=5, padx=10)
-        
-        # Frame medio: Registrar pago
-        frame_pago = ttk.LabelFrame(self.tab_pagos, text="Recibos Pendientes", padding="5")
-        frame_pago.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-        
-        # Treeview de recibos pendientes
-        columns = ('ID', 'Cliente', 'DNI', 'Mes', 'Año', 'Importe', 'Estado')
-        self.tree_recibos = ttk.Treeview(frame_pago, columns=columns, show='headings', height=10)
-        
-        for col in columns:
-            self.tree_recibos.heading(col, text=col)
-        
-        self.tree_recibos.column('ID', width=50)
-        self.tree_recibos.column('Cliente', width=200)
-        self.tree_recibos.column('DNI', width=100)
-        self.tree_recibos.column('Mes', width=100)
-        self.tree_recibos.column('Año', width=70)
-        self.tree_recibos.column('Importe', width=100)
-        self.tree_recibos.column('Estado', width=100)
-        
-        scrollbar = ttk.Scrollbar(frame_pago, orient=tk.VERTICAL, command=self.tree_recibos.yview)
-        self.tree_recibos.configure(yscrollcommand=scrollbar.set)
-        
-        self.tree_recibos.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # Botones de pago
-        frame_btn_pago = ttk.Frame(self.tab_pagos)
-        frame_btn_pago.pack(fill=tk.X)
-        
-        ttk.Button(frame_btn_pago, text="Registrar Pago", 
-                   command=self.registrar_pago).pack(side=tk.LEFT, padx=5)
-        ttk.Button(frame_btn_pago, text="Actualizar Lista", 
-                   command=self.cargar_recibos_pendientes).pack(side=tk.LEFT, padx=5)
-        ttk.Button(frame_btn_pago, text="Ver Clientes Pagados", 
-                   command=self.ver_clientes_pagados).pack(side=tk.RIGHT, padx=5)
-        
-        # Cargar recibos
-        self.cargar_recibos_pendientes()
+        if self.usuario['rol'] == 'admin':
+            # MODO ADMIN: Gestión completa de pagos
+            # Frame superior: Generar recibos
+            frame_generar = ttk.LabelFrame(self.tab_pagos, text="Generar Recibos del Mes", padding="10")
+            frame_generar.pack(fill=tk.X, pady=(0, 10))
+            
+            ttk.Label(frame_generar, text="Mes:").grid(row=0, column=0, padx=5)
+            self.combo_pago_mes = ttk.Combobox(frame_generar, width=15, state='readonly')
+            self.combo_pago_mes['values'] = list(MESES.values())
+            self.combo_pago_mes.set(MESES[obtener_mes_actual()])
+            self.combo_pago_mes.grid(row=0, column=1, padx=5)
+            
+            ttk.Label(frame_generar, text="Año:").grid(row=0, column=2, padx=5)
+            self.spin_pago_anio = ttk.Spinbox(frame_generar, from_=2020, to=2030, width=10)
+            self.spin_pago_anio.set(obtener_anio_actual())
+            self.spin_pago_anio.grid(row=0, column=3, padx=5)
+            
+            ttk.Label(frame_generar, text=f"Importe: {formatear_moneda(MENSUALIDAD)}").grid(row=0, column=4, padx=20)
+            
+            ttk.Button(frame_generar, text="Generar Recibos", 
+                       command=self.generar_recibos).grid(row=0, column=5, padx=10)
+            
+            # Frame medio: Registrar pago
+            frame_pago = ttk.LabelFrame(self.tab_pagos, text="Todos los Recibos", padding="5")
+            frame_pago.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            
+            # Treeview de recibos pendientes
+            columns = ('ID', 'Cliente', 'DNI', 'Mes', 'Año', 'Importe', 'Estado')
+            self.tree_recibos = ttk.Treeview(frame_pago, columns=columns, show='headings', height=10)
+            
+            for col in columns:
+                self.tree_recibos.heading(col, text=col)
+            
+            self.tree_recibos.column('ID', width=50)
+            self.tree_recibos.column('Cliente', width=200)
+            self.tree_recibos.column('DNI', width=100)
+            self.tree_recibos.column('Mes', width=100)
+            self.tree_recibos.column('Año', width=70)
+            self.tree_recibos.column('Importe', width=100)
+            self.tree_recibos.column('Estado', width=100)
+            
+            scrollbar = ttk.Scrollbar(frame_pago, orient=tk.VERTICAL, command=self.tree_recibos.yview)
+            self.tree_recibos.configure(yscrollcommand=scrollbar.set)
+            
+            self.tree_recibos.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            # Botones de pago
+            frame_btn_pago = ttk.Frame(self.tab_pagos)
+            frame_btn_pago.pack(fill=tk.X)
+            
+            ttk.Button(frame_btn_pago, text="Registrar Pago", 
+                       command=self.registrar_pago).pack(side=tk.LEFT, padx=5)
+            ttk.Button(frame_btn_pago, text="Actualizar Lista", 
+                       command=self.cargar_recibos_pendientes).pack(side=tk.LEFT, padx=5)
+            ttk.Button(frame_btn_pago, text="Ver Clientes Pagados", 
+                       command=self.ver_clientes_pagados).pack(side=tk.RIGHT, padx=5)
+            
+            # Cargar recibos
+            self.cargar_recibos_pendientes()
+        else:
+            # MODO EMPLEADO: Solo ver sus propios pagos
+            info_label = tk.Label(
+                self.tab_pagos,
+                text="Mis Pagos",
+                font=('Arial', 12, 'bold'),
+                bg=self.COLOR_GRIS,
+                fg=self.COLOR_AMARILLO
+            )
+            info_label.pack(pady=(0, 10))
+            
+            frame_pago = ttk.LabelFrame(self.tab_pagos, text="Historial de Mis Pagos", padding="10")
+            frame_pago.pack(fill=tk.BOTH, expand=True, padx=20)
+            
+            columns = ('ID', 'Mes', 'Año', 'Importe', 'Estado', 'Fecha Pago')
+            self.tree_recibos = ttk.Treeview(frame_pago, columns=columns, show='headings', height=20)
+            
+            self.tree_recibos.heading('ID', text='ID')
+            self.tree_recibos.heading('Mes', text='Mes')
+            self.tree_recibos.heading('Año', text='Año')
+            self.tree_recibos.heading('Importe', text='Importe')
+            self.tree_recibos.heading('Estado', text='Estado')
+            self.tree_recibos.heading('Fecha Pago', text='Fecha Pago')
+            
+            self.tree_recibos.column('ID', width=60, anchor=tk.CENTER)
+            self.tree_recibos.column('Mes', width=120)
+            self.tree_recibos.column('Año', width=80, anchor=tk.CENTER)
+            self.tree_recibos.column('Importe', width=100, anchor=tk.CENTER)
+            self.tree_recibos.column('Estado', width=150, anchor=tk.CENTER)
+            self.tree_recibos.column('Fecha Pago', width=150, anchor=tk.CENTER)
+            
+            scrollbar = ttk.Scrollbar(frame_pago, orient=tk.VERTICAL, command=self.tree_recibos.yview)
+            self.tree_recibos.configure(yscrollcommand=scrollbar.set)
+            
+            self.tree_recibos.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            
+            # Frame de botones
+            frame_botones_empleado = ttk.Frame(self.tab_pagos)
+            frame_botones_empleado.pack(pady=10)
+            
+            # Botón pagar
+            btn_pagar = tk.Button(
+                frame_botones_empleado,
+                text="PAGAR RECIBO",
+                font=('Arial', 10, 'bold'),
+                bg=self.COLOR_ROJO,
+                fg=self.COLOR_BLANCO,
+                activebackground='#FF1744',
+                command=self.pagar_recibo_empleado,
+                cursor='hand2',
+                relief=tk.FLAT,
+                bd=0
+            )
+            btn_pagar.pack(side=tk.LEFT, padx=5, ipadx=20, ipady=8)
+            
+            # Botón refrescar
+            btn_refrescar = tk.Button(
+                frame_botones_empleado,
+                text="ACTUALIZAR",
+                font=('Arial', 10),
+                bg=self.COLOR_GRIS_CLARO,
+                fg=self.COLOR_BLANCO,
+                activebackground=self.COLOR_GRIS,
+                command=self.cargar_mis_pagos,
+                cursor='hand2',
+                relief=tk.FLAT,
+                bd=0
+            )
+            btn_refrescar.pack(side=tk.LEFT, padx=5, ipadx=15, ipady=8)
+            
+            # Cargar pagos del usuario
+            self.cargar_mis_pagos()
     
     def generar_recibos(self):
         """Genera los recibos del mes seleccionado"""
@@ -937,14 +1195,26 @@ class GymApp:
             self.cargar_recibos_pendientes()
     
     def cargar_recibos_pendientes(self):
-        """Carga los recibos pendientes en el treeview"""
+        """Carga todos los recibos en el treeview con colores"""
         for item in self.tree_recibos.get_children():
             self.tree_recibos.delete(item)
         
-        recibos = self.db.obtener_recibos_pendientes()
+        # Obtener TODOS los recibos (pagados y pendientes)
+        recibos = self.db.obtener_todos_recibos()
+        
+        pendientes = 0
+        pagados = 0
         
         for recibo in recibos:
             mes_nombre = MESES.get(recibo['mes'], str(recibo['mes']))
+            estado = "PAGADO" if recibo['pagado'] else "PENDIENTE"
+            tag = 'pagado' if recibo['pagado'] else 'pendiente'
+            
+            if recibo['pagado']:
+                pagados += 1
+            else:
+                pendientes += 1
+            
             self.tree_recibos.insert('', tk.END, values=(
                 recibo['id_recibo'],
                 f"{recibo['nombre']} {recibo['apellidos']}",
@@ -952,13 +1222,52 @@ class GymApp:
                 mes_nombre,
                 recibo['anio'],
                 formatear_moneda(recibo['importe']),
-                "Pendiente"
-            ))
+                estado
+            ), tags=(tag,))
         
-        self.status_var.set(f"{len(recibos)} recibos pendientes de pago")
+        # Configurar colores
+        self.tree_recibos.tag_configure('pagado', background='#1a4d1a', foreground='#FFFFFF')  # Verde oscuro
+        self.tree_recibos.tag_configure('pendiente', background='#4a2020', foreground='#FFFFFF')  # Rojo oscuro
+        
+        self.status_var.set(f"Usuario: {self.usuario['nombre']} ({self.usuario['rol']}) | {pendientes} pendientes, {pagados} pagados")
+    
+    def cargar_mis_pagos(self):
+        """Carga los pagos del usuario actual (empleado)"""
+        for item in self.tree_recibos.get_children():
+            self.tree_recibos.delete(item)
+        
+        # Buscar cliente por email del usuario
+        cliente = self.db.obtener_cliente_por_email(self.usuario['email'])
+        
+        if not cliente:
+            self.status_var.set(f"Usuario: {self.usuario['nombre']} ({self.usuario['rol']}) | No se encontró cliente asociado")
+            return
+        
+        # Obtener todos los recibos del cliente
+        recibos = self.db.obtener_recibos_por_cliente(cliente['id_cliente'])
+        
+        for recibo in recibos:
+            mes_nombre = MESES.get(recibo['mes'], str(recibo['mes']))
+            estado = "PAGADO" if recibo['pagado'] else "PENDIENTE"
+            fecha_pago = recibo['fecha_pago'][:10] if recibo['fecha_pago'] else "-"
+            
+            self.tree_recibos.insert('', tk.END, values=(
+                recibo['id_recibo'],
+                mes_nombre,
+                recibo['anio'],
+                formatear_moneda(recibo['importe']),
+                estado,
+                fecha_pago
+            ), tags=('pagado' if recibo['pagado'] else 'pendiente',))
+        
+        # Colores según estado
+        self.tree_recibos.tag_configure('pagado', background='#1a3a1a')
+        self.tree_recibos.tag_configure('pendiente', background='#4a2020')
+        
+        self.status_var.set(f"Usuario: {self.usuario['nombre']} ({self.usuario['rol']}) | {len(recibos)} recibos en total")
     
     def registrar_pago(self):
-        """Registra el pago del recibo seleccionado"""
+        """Registra el pago del recibo seleccionado (Admin)"""
         selection = self.tree_recibos.selection()
         if not selection:
             messagebox.showwarning("Aviso", "Seleccione un recibo para registrar el pago")
@@ -967,11 +1276,42 @@ class GymApp:
         item = self.tree_recibos.item(selection[0])
         id_recibo = item['values'][0]
         cliente = item['values'][1]
+        estado = item['values'][6]
+        
+        if estado == "PAGADO":
+            messagebox.showinfo("Información", "Este recibo ya está pagado")
+            return
         
         if messagebox.askyesno("Confirmar", f"¿Registrar pago del recibo de {cliente}?"):
             if self.db.registrar_pago(id_recibo):
                 messagebox.showinfo("Éxito", "Pago registrado correctamente")
                 self.cargar_recibos_pendientes()
+                self.cargar_morosos()  # Actualizar lista de morosos
+    
+    def pagar_recibo_empleado(self):
+        """Permite al empleado pagar su propio recibo"""
+        selection = self.tree_recibos.selection()
+        if not selection:
+            messagebox.showwarning("Aviso", "Seleccione un recibo para pagar")
+            return
+        
+        item = self.tree_recibos.item(selection[0])
+        id_recibo = item['values'][0]
+        mes = item['values'][1]
+        anio = item['values'][2]
+        importe = item['values'][3]
+        estado = item['values'][4]
+        
+        if estado == "PAGADO":
+            messagebox.showinfo("Información", "Este recibo ya está pagado")
+            return
+        
+        if messagebox.askyesno("Confirmar Pago", 
+                              f"¿Confirmar pago de {importe} correspondiente a {mes} {anio}?\n\n"
+                              f"Este pago se registrará inmediatamente."):
+            if self.db.registrar_pago(id_recibo):
+                messagebox.showinfo("Éxito", "Pago procesado correctamente")
+                self.cargar_mis_pagos()  # Recargar lista
     
     def ver_clientes_pagados(self):
         """Muestra los clientes que han pagado"""
@@ -1124,6 +1464,14 @@ class GymApp:
                   font=('Arial', 9), justify=tk.LEFT).pack(pady=10)
         
         ttk.Button(frame, text="Cerrar", command=ventana.destroy).pack(pady=10)
+    
+    def cerrar_sesion(self):
+        """Cierra la sesión actual y vuelve al login"""
+        if messagebox.askokcancel("Cerrar Sesión", "¿Desea cerrar sesión?"):
+            self.cerro_sesion = True  # Marcar que se cerró sesión
+            self.db.disconnect()
+            self.root.quit()  # Sale del mainloop
+            self.root.destroy()  # Destruye la ventana
     
     def on_closing(self):
         """Maneja el cierre de la aplicación"""

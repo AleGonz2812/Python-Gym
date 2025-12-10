@@ -227,6 +227,28 @@ class DatabaseManager:
         self.execute_query(query, (id_cliente,))
         return self.cursor.fetchone()
     
+    def obtener_cliente_por_dni(self, dni: str) -> Optional[sqlite3.Row]:
+        """Obtiene un cliente por su DNI"""
+        query = "SELECT * FROM cliente WHERE dni = ? AND activo = 1"
+        self.execute_query(query, (dni.upper(),))
+        return self.cursor.fetchone()
+    
+    def obtener_cliente_por_email(self, email: str) -> Optional[sqlite3.Row]:
+        """Obtiene un cliente por su email"""
+        query = "SELECT * FROM cliente WHERE email = ? AND activo = 1"
+        self.execute_query(query, (email,))
+        return self.cursor.fetchone()
+    
+    def crear_cliente(self, nombre: str, apellidos: str, dni: str, 
+                     telefono: str = None, email: str = None) -> Optional[int]:
+        """
+        Crea un nuevo cliente (alias de insertar_cliente para compatibilidad).
+        
+        Returns:
+            ID del cliente insertado o None si hay error
+        """
+        return self.insertar_cliente(nombre, apellidos, dni, telefono, email)
+    
     def actualizar_cliente(self, id_cliente: int, nombre: str, apellidos: str, 
                            dni: str, telefono: str = None, email: str = None) -> bool:
         """Actualiza los datos de un cliente"""
@@ -496,6 +518,16 @@ class DatabaseManager:
                 ORDER BY c.apellidos, c.nombre, r.anio, r.mes
             """
             self.execute_query(query)
+        return self.cursor.fetchall()
+    
+    def obtener_recibos_por_cliente(self, id_cliente: int) -> List[sqlite3.Row]:
+        """Obtiene todos los recibos (pagados y pendientes) de un cliente"""
+        query = """
+            SELECT * FROM recibo
+            WHERE id_cliente = ?
+            ORDER BY anio DESC, mes DESC
+        """
+        self.execute_query(query, (id_cliente,))
         return self.cursor.fetchall()
     
     def obtener_clientes_morosos(self) -> List[dict]:
